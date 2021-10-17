@@ -1,0 +1,103 @@
+---
+title: "p8105_hw3_yz4184"
+author: "Yunlin Zhou"
+date: "10/17/2021"
+output: html_document
+---
+```{r}
+library(tidyverse)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+
+# Problem 1
+
+```{r}
+library(p8105.datasets)
+data("instacart")
+```
+
+```{r}
+# How many aisles are there
+
+aisles_cate = unique(instacart$aisle)
+aisles_num = length(aisles_cate)
+aisles_num
+
+# Which aisles are the most items ordered from?
+
+head(instacart %>% 
+	count(aisle) %>% 
+	arrange(desc(n)),1)
+```
+
+```{r}
+# Make a plot that shows the number of items ordered in each aisle
+
+item_asile = instacart %>% 
+	count(aisle) %>% 
+	arrange(desc(n))
+
+item_asile_10000 = item_asile %>%
+  filter(n > 10000)
+
+item_asile_plot =ggplot(item_asile_10000, aes(x = aisle, y = n))+
+  geom_point()
+
+ggsave("item_asile_plot.pdf")
+```
+
+```{r}
+# Make a table showing the three most popular items in each of the aisles
+
+baking_df = head(instacart%>%
+filter(aisle=="baking ingredients")%>%
+  group_by(aisle,product_name)%>%
+  count()%>%
+  arrange(desc(n)),3)
+
+dog_df = head(instacart%>%
+filter(aisle=="dog food care")%>%
+  group_by(aisle,product_name)%>%
+  count()%>%
+  arrange(desc(n)),3)
+
+packaged_df = head(instacart%>%
+filter(aisle=="packaged vegetables fruits")%>%
+  group_by(aisle,product_name)%>%
+  count()%>%
+  arrange(desc(n)),3)
+
+popular_items = bind_rows(baking_df,dog_df,packaged_df)
+```
+
+```{r}
+instacart%>%
+  filter(days_since_prior_order == 0,
+         product_name %in% c("Pink Lady Apples","Coffee Ice Cream"))%>%
+  mutate(
+    mean_hour=mean(order_hour_of_day))%>%
+  select(product_name,mean_hour)
+```
+
+
+## Problem 2
+
+```{r}
+data("brfss_smart2010")
+```
