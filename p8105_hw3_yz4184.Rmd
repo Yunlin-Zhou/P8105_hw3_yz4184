@@ -171,6 +171,11 @@ brfss_new %>%
 ## Problem 3
 ```{r}
 accel_df = read.csv("./accel_data.csv")%>%
-  janitor::clean_names()
+  janitor::clean_names()%>%
+  pivot_longer(activity_1:activity_1440,
+    names_to = "activity_counts",
+    names_prefix = "activity_")%>%
+  filter(value!=1)
+
 ```
 
