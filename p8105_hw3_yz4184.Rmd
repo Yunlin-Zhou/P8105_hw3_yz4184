@@ -2,7 +2,7 @@
 title: "p8105_hw3_yz4184"
 author: "Yunlin Zhou"
 date: "10/17/2021"
-output: html_document
+output: github_document
 ---
 ```{r}
 library(tidyverse)
@@ -35,20 +35,30 @@ data("instacart")
 ```
 
 ```{r}
+# description of the dataset
+str(instacart)
+# there are 1,384,617 rows and 15 columns in this dataset. 4 character columns and 11 integer columns. there are key variables like aisle which is the name of aisles, and product_name which are the names of products bought from the asile.
+```
+
+```{r}
 # How many aisles are there
 
 aisles_cate = unique(instacart$aisle)
 aisles_num = length(aisles_cate)
 aisles_num
 
+# 134
+
 # Which aisles are the most items ordered from?
 
 head(instacart %>% 
 	count(aisle) %>% 
 	arrange(desc(n)),1)
+
+# fresh vegetables
 ```
 
-```{r}
+```{r,fig.asp = 2}
 # Make a plot that shows the number of items ordered in each aisle
 
 item_asile = instacart %>% 
@@ -58,8 +68,13 @@ item_asile = instacart %>%
 item_asile_10000 = item_asile %>%
   filter(n > 10000)
 
-item_asile_plot =ggplot(item_asile_10000, aes(x = aisle, y = n))+
-  geom_col()
+item_asile_plot =ggplot(item_asile_10000, aes(x = n, y = aisle))+
+  geom_col()+
+  labs(
+    title = "Number of items ordered in each aisle",
+    x = "Number of items ordered in each aisle",
+    y = "Asile"
+  )
 
 ggsave("item_asile_plot.pdf")
 
@@ -140,6 +155,8 @@ df_2002 = brfss_new%>%
   )%>%
   filter(location_num>=7)
 
+  knitr::kable(df_2002)
+
 # In 2010
 
 df_2010 = brfss_new%>%
@@ -149,9 +166,14 @@ df_2010 = brfss_new%>%
     location_num = n_distinct(locationdesc)
   )%>%
   filter(location_num>=7)
+
+  knitr::kable(df_2010)
 ```
 
+
 ```{r,fig.asp= 1.5}
+#  averages the data_value across locations within a state
+
 brfss_new%>%
   filter(response == "Excellent")%>%
   group_by(year,locationabbr)%>%
@@ -159,17 +181,28 @@ brfss_new%>%
   group_by(year,locationabbr,mean_data_value)%>%
   summarize()%>%
   
-  ggplot(aes(x= year,y=mean_data_value,group = locationabbr,color = locationabbr))+geom_line()
+  ggplot(aes(x= year,y=mean_data_value,group = locationabbr,color = locationabbr))+geom_line() + 
+  labs(
+    title = "Average value over time within a state",
+    x = "Year",
+    y = "Mean of data value"
+  )
 ```
 
 ```{r}
 # Make a two-panel plot
+
 brfss_new %>%
   filter(year%in%c("2006","2010"),
          locationabbr == "NY")%>%
   group_by(year,response,data_value)%>%
   summarize()%>%
-  ggplot(aes(x=data_value, y = response,fill = response))+geom_density_ridges(scale =0.85)+ facet_grid(. ~ year)
+  ggplot(aes(x=data_value, y = response,fill = response))+geom_density_ridges(scale =0.85)+ facet_grid(. ~ year) + 
+  labs(
+    title = "Responses among locations in NY",
+    x = "Data value",
+    y = "Response"
+  )
 
 
 ```
@@ -177,12 +210,14 @@ brfss_new %>%
 
 ## Problem 3
 ```{r}
+# Load, tidy, and otherwise wrangle the data
+
 accel_df = read.csv("./accel_data.csv")%>%
   janitor::clean_names()%>%
   pivot_longer(activity_1:activity_1440,
     names_to = "activity_counts",
     names_prefix = "activity_")%>%
-  mutate(day = factor(day,ordered = T),
+  mutate(day = factor(day),
     week_day_end =  case_when(
       day %in% c("Monday","Tuesday","Wednsday","Thursday","Friday")~ "weekday",
       day %in% c("Saturday","Sunday") ~ "weekend",
@@ -193,16 +228,29 @@ accel_df = read.csv("./accel_data.csv")%>%
 ```
 
 ```{r}
+# aggregate accross minutes to create a total activity variable for each day
+
 each_day =accel_df%>%
-  group_by(day_id,day)%>%
+  group_by(week,day)%>%
   mutate(sum = sum(value))%>%
-  group_by(day_id,day,sum)%>%
-  summarize()
+  group_by(week,day,sum)%>%
+  summarize()%>%
+  pivot_wider(names_from = day,
+              values_from = sum)
+
 knitr::kable(each_day)
+
+# the values would be smaller during the weekends
 ```
 
-```{r}
+```{r,fig.asp=3}
+# Accelerometer data allows the inspection activity over the course of the day.
+
 accel_df%>%
-  ggplot(aes(x=activity_counts,y=value, color = day))+geom_line()
+  ggplot(aes(x=value,y=activity_counts, color = day))+geom_line()+
+  labs(title = "24-hour activity time courses for each day",
+       x = "Value",
+       y = "Activity counts")+
+  theme(legend.position = "right")
 ```
 
