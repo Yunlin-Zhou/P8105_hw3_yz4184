@@ -6,6 +6,7 @@ output: html_document
 ---
 ```{r}
 library(tidyverse)
+library(ggridges)
 library(dplyr)
 
 knitr::opts_chunk$set(
@@ -58,9 +59,11 @@ item_asile_10000 = item_asile %>%
   filter(n > 10000)
 
 item_asile_plot =ggplot(item_asile_10000, aes(x = aisle, y = n))+
-  geom_point()
+  geom_col()
 
 ggsave("item_asile_plot.pdf")
+
+item_asile_plot
 ```
 
 ```{r}
@@ -131,28 +134,32 @@ brfss_new =
 
 df_2002 = brfss_new%>%
   filter(year=="2002")%>%
-  count(locationabbr,locationdesc)%>%
-  count(locationabbr,name = "num")%>%
-  filter(num>=7)
+  group_by(locationabbr)%>%
+  summarise(
+    location_num = n_distinct(locationdesc)
+  )%>%
+  filter(location_num>=7)
 
 # In 2010
 
 df_2010 = brfss_new%>%
   filter(year=="2010")%>%
-  count(locationabbr,locationdesc)%>%
-  count(locationabbr,name = "num")%>%
-  filter(num>=7)
+ group_by(locationabbr)%>%
+  summarise(
+    location_num = n_distinct(locationdesc)
+  )%>%
+  filter(location_num>=7)
 ```
 
-```{r}
+```{r,fig.asp= 1.5}
 brfss_new%>%
   filter(response == "Excellent")%>%
-  group_by(locationabbr)%>%
-  mutate(mean_data_value = mean(data_value, na.ra =TRUE))%>%
+  group_by(year,locationabbr)%>%
+  mutate(mean_data_value = mean(data_value))%>%
   group_by(year,locationabbr,mean_data_value)%>%
   summarize()%>%
   
-  ggplot(aes(x=locationabbr,y=mean_data_value,color = year))+geom_line()
+  ggplot(aes(x= year,y=mean_data_value,group = locationabbr,color = locationabbr))+geom_line()
 ```
 
 ```{r}
@@ -162,7 +169,7 @@ brfss_new %>%
          locationabbr == "NY")%>%
   group_by(year,response,data_value)%>%
   summarize()%>%
-  ggplot(aes(x=data_value, fill = response))+geom_density()+ facet_grid(. ~ year)
+  ggplot(aes(x=data_value, y = response,fill = response))+geom_density_ridges(scale =0.85)+ facet_grid(. ~ year)
 
 
 ```
@@ -175,7 +182,27 @@ accel_df = read.csv("./accel_data.csv")%>%
   pivot_longer(activity_1:activity_1440,
     names_to = "activity_counts",
     names_prefix = "activity_")%>%
-  filter(value!=1)
+  mutate(day = factor(day,ordered = T),
+    week_day_end =  case_when(
+      day %in% c("Monday","Tuesday","Wednsday","Thursday","Friday")~ "weekday",
+      day %in% c("Saturday","Sunday") ~ "weekend",
+      TRUE      ~ ""
+    ))
+  
 
+```
+
+```{r}
+each_day =accel_df%>%
+  group_by(day_id,day)%>%
+  mutate(sum = sum(value))%>%
+  group_by(day_id,day,sum)%>%
+  summarize()
+knitr::kable(each_day)
+```
+
+```{r}
+accel_df%>%
+  ggplot(aes(x=activity_counts,y=value, color = day))+geom_line()
 ```
 
